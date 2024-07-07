@@ -1,0 +1,2 @@
+cargo new icp-token-contract
+cd icp-token-contract

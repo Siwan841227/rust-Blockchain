@@ -1,0 +1,39 @@
+use ic_cdk_macros::*;
+use ic_cdk::storage;
+
+#[derive(Clone, Copy, Debug)]
+struct Token(u64);
+
+#[derive(Clone, Debug)]
+struct Wallet {
+    balance: Token,
+}
+
+#[init]
+fn init() {
+    let initial_balance = Token(1000);
+    let wallet = Wallet { balance: initial_balance };
+    storage::stable_save((ic_cdk::caller(), &wallet));
+}
+
+#[update]
+fn send_tokens(to: Principal, amount: Token) {
+    let caller = ic_cdk::caller();
+    let mut sender_wallet: Wallet = storage::stable_get_or_default(&(caller.clone(),));
+    let mut receiver_wallet: Wallet = storage::stable_get_or_default(&(to.clone(),));
+
+    if sender_wallet.balance.0 >= amount.0 {
+        sender_wallet.balance.0 -= amount.0;
+        receiver_wallet.balance.0 += amount.0;
+
+        storage::stable_save((caller, &sender_wallet));
+        storage::stable_save((to, &receiver_wallet));
+    }
+}
+
+#[query]
+fn get_balance() -> Token {
+    let caller = ic_cdk::caller();
+    let wallet: Wallet = storage::stable_get_or_default(&(caller,));
+    wallet.balance
+}
